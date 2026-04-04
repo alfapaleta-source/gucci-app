@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ГУЧИ — Симулятор голодного кота</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --text-dim: #6b6b88;
+      --radius: 12px;
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 28px 16px 48px; gap: 20px;
+      transition: background 1s ease;
+    }
+
+    .app.stage-full     { background: radial-gradient(ellipse at top, #0a130a 0%, #0a0a0f 65%); }
+    .app.stage-hungry   { background: radial-gradient(ellipse at top, #1a160a 0%, #0a0a0f 65%); }
+    .app.stage-starving { background: radial-gradient(ellipse at top, #1a0e06 0%, #0a0a0f 65%); }
+    .app.stage-danger   { animation: danger-bg 2s ease-in-out infinite; }
+
+    @keyframes danger-bg {
+      0%,100% { background: radial-gradient(ellipse at top, #1a0808 0%, #0a0a0f 65%); }
+      50%     { background: radial-gradient(ellipse at top, #2a0808 0%, #0a0a0f 65%); }
+    }
+
+    .app-header { text-align: center; }
+
+    .app-title {
+      font-family: var(--font-pixel);
+      font-size: clamp(28px, 7vw, 52px);
+      letter-spacing: 0.14em;
+      background: linear-gradient(135deg, #facc15, #f97316, #ef4444);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1.3;
+    }
+
+    .app-sub { color: var(--text-dim); font-size: 12px; margin-top: 8px; letter-spacing: 0.04em; }
+
+    .status-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+      width: 100%; max-width: 460px;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+
+    .stage-badge {
+      font-family: var(--font-pixel); font-size: 9px; letter-spacing: 0.06em;
+      text-align: center; border: 1px solid currentColor; border-radius: 6px;
+      padding: 10px 18px; display: flex; flex-direction: column; gap: 5px;
+      transition: color 0.5s; text-transform: uppercase; width: 100%;
+    }
+    .stage-sub { font-size: 7px; opacity: 0.55; }
+
+    /* ─── Cat SVG Container ─────────────────────────────────────────────────── */
+    .cat-container {
+      width: 190px;
+      transition: filter 0.6s ease;
+      user-select: none;
+    }
+    .cat-container svg { width: 100%; height: auto; display: block; }
+
+    /* Mood glow effects applied to SVG container */
+    .cat-container.mood-happy     { filter: drop-shadow(0 4px 12px rgba(74,222,128,0.25)); }
+    .cat-container.mood-annoyed   { filter: drop-shadow(0 4px 14px rgba(250,204,21,0.3)); }
+    .cat-container.mood-furious   { filter: drop-shadow(0 4px 18px rgba(249,115,22,0.45)); }
+    .cat-container.mood-murderous { filter: drop-shadow(0 4px 22px rgba(239,68,68,0.6)); }
+    .cat-container.mood-dead      { filter: grayscale(0.85) brightness(0.55); }
+
+    @keyframes cat-shake {
+      0%,100% { transform: translateX(0) rotate(0); }
+      20%     { transform: translateX(-7px) rotate(-2deg); }
+      40%     { transform: translateX(7px) rotate(2deg); }
+      60%     { transform: translateX(-4px) rotate(-1deg); }
+      80%     { transform: translateX(4px) rotate(1deg); }
+    }
+    .cat-container.shaking { animation: cat-shake 0.5s ease; }
+
+    /* ─── Hunger Bar ───────────────────────────────────────────────────────── */
+    .hunger-wrap { width: 100%; display: flex; flex-direction: column; gap: 7px; }
+    .hunger-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+    .hunger-pct { font-family: var(--font-pixel); font-size: 10px; }
+    .hunger-track { height: 16px; background: var(--surface2); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
+    .hunger-fill { height: 100%; border-radius: 999px; transition: width 0.9s ease, background 0.5s ease, box-shadow 0.5s ease; }
+
+    /* ─── Message ──────────────────────────────────────────────────────────── */
+    .msg-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 18px;
+      font-size: 13px; line-height: 1.65; text-align: center;
+      font-style: italic; width: 100%; transition: opacity 0.3s;
+    }
+    .msg-quote { color: var(--text-dim); font-style: normal; margin: 0 3px; }
+
+    /* ─── Danger Ticker ────────────────────────────────────────────────────── */
+    .ticker-wrap {
+      width: 100%; max-width: 460px; background: #ef4444;
+      border-radius: 6px; overflow: hidden; height: 32px;
+      display: flex; align-items: center;
+    }
+    .ticker-inner {
+      font-family: var(--font-pixel); font-size: 7px; color: #fff;
+      letter-spacing: 0.1em; white-space: nowrap;
+      animation: scroll-ticker 12s linear infinite; padding-left: 100%;
+    }
+    @keyframes scroll-ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-200%); }
+    }
+
+    /* ─── Food ─────────────────────────────────────────────────────────────── */
+    .food-section { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 14px; }
+    .food-title { font-family: var(--font-pixel); font-size: 8px; letter-spacing: 0.12em; color: var(--text-dim); text-transform: uppercase; }
+    .food-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+    .food-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 12px;
+      cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      text-align: center; width: 100%; color: var(--text); font-family: var(--font-body);
+    }
+    .food-btn:hover { border-color: #f97316; background: var(--surface2); transform: translateY(-2px); }
+    .food-btn:active { transform: scale(0.97); }
+    .food-btn:focus-visible { outline: 2px solid #f97316; outline-offset: 2px; }
+    .food-emoji { font-size: 30px; line-height: 1; }
+    .food-name  { font-weight: 700; font-size: 13px; }
+    .food-desc  { font-size: 11px; color: var(--text-dim); }
+    .food-cost  { font-family: var(--font-pixel); font-size: 8px; color: #f97316; margin-top: 2px; }
+
+    @keyframes fed-flash {
+      0%   { border-color: #4ade80; background: #0a1f10; }
+      100% { border-color: var(--border); background: var(--surface); }
+    }
+    .food-btn.fed { animation: fed-flash 1s ease forwards; }
+
+    /* ─── Footer ───────────────────────────────────────────────────────────── */
+    .app-footer { display: flex; gap: 14px; font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+    /* ─── Game Over ────────────────────────────────────────────────────────── */
+    .dead-screen {
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #180808 0%, #050508 100%) !important;
+      animation: none !important;
+    }
+    .dead-box { display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; max-width: 380px; animation: fadein 0.7s ease; }
+    @keyframes fadein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .dead-title { font-family: var(--font-pixel); font-size: clamp(18px, 5vw, 36px); color: #ef4444; filter: drop-shadow(0 0 18px #ef4444); letter-spacing: 0.16em; }
+    .dead-msg { font-size: 16px; line-height: 1.7; font-style: italic; }
+    .dead-sub { font-size: 12px; color: var(--text-dim); }
+
+    .reset-btn {
+      background: transparent; border: 1px solid #ef4444; color: #ef4444;
+      font-family: var(--font-pixel); font-size: 8px;
+      padding: 18px 30px; border-radius: var(--radius);
+      cursor: pointer; display: flex; flex-direction: column; align-items: center;
+      gap: 10px; transition: background 0.2s, color 0.2s;
+      letter-spacing: 0.06em; margin-top: 8px;
+    }
+    .reset-btn:hover { background: #ef4444; color: #fff; }
+    .reset-btn:focus-visible { outline: 2px solid #ef4444; outline-offset: 3px; }
+    .reset-sub { font-size: 7px; opacity: 0.55; font-family: var(--font-body); font-style: italic; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 380px) { .food-grid { grid-template-columns: 1fr; } .status-card { padding: 16px 12px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+
+<div id="danger-announce" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+<div class="app stage-full" id="app">
+  <header class="app-header">
+    <h1 class="app-title">ГУЧИ</h1>
+    <p class="app-sub">Симулятор выживания рядом с голодным котом</p>
+  </header>
+
+  <div class="status-card">
+    <div class="stage-badge" id="stage-badge">
+      <span id="stage-label">Сытый и доволен</span>
+      <span class="stage-sub" id="stage-sub">пока что</span>
+    </div>
+
+    <div class="cat-container mood-happy" id="cat" role="img" aria-label="Кот Гучи — доволен"></div>
+
+    <div class="hunger-wrap">
+      <div class="hunger-label">
+        <span>Голод</span>
+        <span class="hunger-pct" id="hunger-pct">15%</span>
+      </div>
+      <div class="hunger-track" role="progressbar" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100" aria-label="Уровень голода">
+        <div class="hunger-fill" id="hunger-fill" style="width:15%; background:#4ade80;"></div>
+      </div>
+    </div>
+
+    <div class="msg-box" id="msg-box">
+      <span class="msg-quote">"</span><span id="msg-text">Гучи смотрит на вас. Пока что без ненависти.</span><span class="msg-quote">"</span>
+    </div>
+  </div>
+
+  <div class="ticker-wrap hidden" id="ticker" aria-hidden="true">
+    <div class="ticker-inner">
+      ⚠ ВНИМАНИЕ ⚠ · ГУЧИ В РЕЖИМЕ УНИЧТОЖЕНИЯ · КОРМИТЕ НЕМЕДЛЕННО ·&nbsp;&nbsp;&nbsp;
+      ⚠ ВНИМАНИЕ ⚠ · ГУЧИ В РЕЖИМЕ УНИЧТОЖЕНИЯ · КОРМИТЕ НЕМЕДЛЕННО ·
+    </div>
+  </div>
+
+  <section class="food-section" aria-label="Меню кормления">
+    <h2 class="food-title">Чем накормить Гучи?</h2>
+    <div class="food-grid" id="food-grid"></div>
+  </section>
+
+  <footer class="app-footer">
+    <span>Без еды: <span id="footer-time">0</span>с</span>
+    <span>·</span>
+    <span>Угроза: <span id="footer-hunger">15</span>%</span>
+  </footer>
+</div>
+
+<div class="app dead-screen hidden" id="dead-screen">
+  <div class="dead-box">
+    <div class="cat-container mood-dead" id="dead-cat" role="img" aria-label="Кот Гучи — ушёл"></div>
+    <p class="dead-title" role="heading" aria-level="1">ГУЧИ УШЁЛ</p>
+    <p class="dead-msg" id="dead-msg"></p>
+    <p class="dead-sub">Вы могли покормить его. Но не сделали этого.</p>
+    <button class="reset-btn" id="reset-btn" type="button" aria-label="Начать заново">
+      Попробовать снова
+      <span class="reset-sub">(Гучи вас не простит)</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ─── Cat SVG art — dark brown cat based on comic image, 5 states ──────────────
+// SVG content is hardcoded trusted markup — innerHTML is safe here
+const CAT_SVGS = {
+
+  // ── HAPPY: open round eyes, slight smile, gentle glow ────────────────────
+  happy: `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="244" rx="76" ry="20" fill="#1c0f06"/>
+    <path d="M42 218 Q62 200 100 196 Q138 200 158 218 L156 244 Q100 248 44 244 Z" fill="#1c0f06"/>
+    <polygon points="33,88 19,20 72,68" fill="#1c0f06"/>
+    <polygon points="39,82 30,34 67,66" fill="#5a2518"/>
+    <polygon points="167,88 181,20 128,68" fill="#1c0f06"/>
+    <polygon points="161,82 170,34 133,66" fill="#5a2518"/>
+    <ellipse cx="100" cy="128" rx="83" ry="79" fill="#1c0f06"/>
+    <ellipse cx="100" cy="97" rx="52" ry="29" fill="#2e1a09" opacity="0.45"/>
+    <ellipse cx="100" cy="160" rx="30" ry="23" fill="#2e1a09"/>
+    <ellipse cx="70" cy="114" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="70" cy="114" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="70" cy="114" rx="9" ry="10" fill="#0a0500"/>
+    <circle cx="63" cy="107" r="5" fill="white" opacity="0.9"/>
+    <circle cx="75" cy="119" r="2.2" fill="white" opacity="0.45"/>
+    <ellipse cx="130" cy="114" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="130" cy="114" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="130" cy="114" rx="9" ry="10" fill="#0a0500"/>
+    <circle cx="123" cy="107" r="5" fill="white" opacity="0.9"/>
+    <circle cx="135" cy="119" r="2.2" fill="white" opacity="0.45"/>
+    <path d="M93,154 L107,154 L100,162 Z" fill="#5a2518"/>
+    <line x1="97" y1="162" x2="94" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <line x1="103" y1="162" x2="106" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <path d="M87,171 Q100,183 113,171" stroke="#5a2518" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <line x1="24" y1="154" x2="70" y2="158" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="21" y1="161" x2="70" y2="162" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="24" y1="168" x2="70" y2="166" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="158" x2="176" y2="154" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="162" x2="179" y2="161" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="166" x2="176" y2="168" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+  </svg>`,
+
+  // ── ANNOYED: half-lidded eyes, arched brows, flat frown ──────────────────
+  annoyed: `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="244" rx="76" ry="20" fill="#1c0f06"/>
+    <path d="M42 218 Q62 200 100 196 Q138 200 158 218 L156 244 Q100 248 44 244 Z" fill="#1c0f06"/>
+    <polygon points="33,88 19,20 72,68" fill="#1c0f06"/>
+    <polygon points="39,82 30,34 67,66" fill="#5a2518"/>
+    <polygon points="167,88 181,20 128,68" fill="#1c0f06"/>
+    <polygon points="161,82 170,34 133,66" fill="#5a2518"/>
+    <ellipse cx="100" cy="128" rx="83" ry="79" fill="#1c0f06"/>
+    <ellipse cx="100" cy="97" rx="52" ry="29" fill="#2e1a09" opacity="0.45"/>
+    <ellipse cx="100" cy="160" rx="30" ry="23" fill="#2e1a09"/>
+    <path d="M47,95 Q70,89 89,96" stroke="#0a0500" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M111,96 Q130,89 153,95" stroke="#0a0500" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="70" cy="114" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="70" cy="114" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="70" cy="114" rx="8" ry="11" fill="#0a0500"/>
+    <circle cx="63" cy="108" r="4.5" fill="white" opacity="0.85"/>
+    <ellipse cx="70" cy="103" rx="20" ry="11" fill="#1c0f06"/>
+    <ellipse cx="130" cy="114" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="130" cy="114" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="130" cy="114" rx="8" ry="11" fill="#0a0500"/>
+    <circle cx="123" cy="108" r="4.5" fill="white" opacity="0.85"/>
+    <ellipse cx="130" cy="103" rx="20" ry="11" fill="#1c0f06"/>
+    <path d="M93,154 L107,154 L100,162 Z" fill="#5a2518"/>
+    <line x1="97" y1="162" x2="94" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <line x1="103" y1="162" x2="106" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <path d="M88,174 Q100,168 112,174" stroke="#5a2518" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <line x1="24" y1="154" x2="70" y2="158" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="21" y1="161" x2="70" y2="162" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="24" y1="168" x2="70" y2="166" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="158" x2="176" y2="154" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="162" x2="179" y2="161" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="166" x2="176" y2="168" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+  </svg>`,
+
+  // ── FURIOUS: V-brows, slit pupils, open mouth with teeth ─────────────────
+  furious: `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="244" rx="76" ry="20" fill="#1c0f06"/>
+    <path d="M42 218 Q62 200 100 196 Q138 200 158 218 L156 244 Q100 248 44 244 Z" fill="#1c0f06"/>
+    <polygon points="36,90 24,26 74,72" fill="#1c0f06"/>
+    <polygon points="42,84 34,40 69,70" fill="#5a2518"/>
+    <polygon points="164,90 176,26 126,72" fill="#1c0f06"/>
+    <polygon points="158,84 166,40 131,70" fill="#5a2518"/>
+    <ellipse cx="100" cy="128" rx="83" ry="79" fill="#1c0f06"/>
+    <ellipse cx="100" cy="97" rx="52" ry="29" fill="#2e1a09" opacity="0.45"/>
+    <ellipse cx="100" cy="162" rx="30" ry="23" fill="#2e1a09"/>
+    <path d="M44,103 L79,114" stroke="#0a0500" stroke-width="6" stroke-linecap="round"/>
+    <path d="M121,114 L156,103" stroke="#0a0500" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="70" cy="117" rx="24" ry="24" fill="#0a0500"/>
+    <ellipse cx="70" cy="117" rx="21" ry="21" fill="#e8b800"/>
+    <ellipse cx="70" cy="117" rx="5" ry="14" fill="#0a0500"/>
+    <circle cx="63" cy="109" r="4" fill="white" opacity="0.9"/>
+    <ellipse cx="130" cy="117" rx="24" ry="24" fill="#0a0500"/>
+    <ellipse cx="130" cy="117" rx="21" ry="21" fill="#e8b800"/>
+    <ellipse cx="130" cy="117" rx="5" ry="14" fill="#0a0500"/>
+    <circle cx="123" cy="109" r="4" fill="white" opacity="0.9"/>
+    <path d="M93,154 L107,154 L100,162 Z" fill="#5a2518"/>
+    <line x1="97" y1="162" x2="94" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <line x1="103" y1="162" x2="106" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <path d="M81,172 Q100,190 119,172 Q100,198 81,172 Z" fill="#5a2518"/>
+    <rect x="85" y="172" width="9" height="8" rx="1.5" fill="white"/>
+    <rect x="95.5" y="172" width="9" height="8" rx="1.5" fill="white"/>
+    <rect x="106" y="172" width="9" height="8" rx="1.5" fill="white"/>
+    <ellipse cx="100" cy="190" rx="10" ry="6" fill="#8b1a1a"/>
+    <line x1="22" y1="155" x2="70" y2="159" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="19" y1="163" x2="70" y2="163" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="22" y1="171" x2="70" y2="167" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="159" x2="178" y2="155" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="163" x2="181" y2="163" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="167" x2="178" y2="171" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+  </svg>`,
+
+  // ── MURDEROUS: panel 2 of the comic — asymmetric brows, intense stare,
+  //    one eye squinted, tight grimace. The iconic "я чувствую себя грязным" look.
+  murderous: `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="244" rx="76" ry="20" fill="#1c0f06"/>
+    <path d="M42 218 Q62 200 100 196 Q138 200 158 218 L156 244 Q100 248 44 244 Z" fill="#1c0f06"/>
+    <polygon points="33,88 19,20 72,68" fill="#1c0f06"/>
+    <polygon points="39,82 30,34 67,66" fill="#5a2518"/>
+    <polygon points="167,88 181,20 128,68" fill="#1c0f06"/>
+    <polygon points="161,82 170,34 133,66" fill="#5a2518"/>
+    <ellipse cx="100" cy="128" rx="83" ry="79" fill="#1c0f06"/>
+    <ellipse cx="100" cy="97" rx="52" ry="29" fill="#2e1a09" opacity="0.45"/>
+    <ellipse cx="100" cy="160" rx="30" ry="23" fill="#2e1a09"/>
+    <!-- Asymmetric brows: left raised (character's left = our right), right furrowed down -->
+    <path d="M46,99 Q68,88 89,96" stroke="#0a0500" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M111,96 Q132,89 154,99" stroke="#0a0500" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <!-- Left eye: open — the raised-brow side (intimidating wide stare) -->
+    <ellipse cx="70" cy="116" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="70" cy="116" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="70" cy="116" rx="10" ry="11" fill="#0a0500"/>
+    <circle cx="62" cy="109" r="5" fill="white" opacity="0.92"/>
+    <circle cx="74" cy="121" r="2" fill="white" opacity="0.38"/>
+    <!-- Right eye: squinted — the furrowed-brow side -->
+    <ellipse cx="130" cy="116" rx="23" ry="23" fill="#0a0500"/>
+    <ellipse cx="130" cy="116" rx="20" ry="20" fill="#e8b800"/>
+    <ellipse cx="130" cy="116" rx="10" ry="11" fill="#0a0500"/>
+    <circle cx="122" cy="109" r="5" fill="white" opacity="0.92"/>
+    <!-- Squint lid covering upper third of right eye -->
+    <ellipse cx="130" cy="105" rx="21" ry="12" fill="#1c0f06"/>
+    <path d="M93,154 L107,154 L100,162 Z" fill="#5a2518"/>
+    <line x1="97" y1="162" x2="94" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <line x1="103" y1="162" x2="106" y2="169" stroke="#5a2518" stroke-width="1.5"/>
+    <!-- Tight grimace — slight lip curl at corners -->
+    <path d="M85,170 Q100,165 115,170" stroke="#5a2518" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M85,170 Q82,176 85,180" stroke="#5a2518" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M115,170 Q118,176 115,180" stroke="#5a2518" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <rect x="85" y="170" width="5" height="4" rx="1" fill="white" opacity="0.65"/>
+    <rect x="110" y="170" width="5" height="4" rx="1" fill="white" opacity="0.65"/>
+    <line x1="24" y1="154" x2="70" y2="158" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="21" y1="161" x2="70" y2="162" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="24" y1="168" x2="70" y2="166" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="158" x2="176" y2="154" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="162" x2="179" y2="161" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+    <line x1="130" y1="166" x2="176" y2="168" stroke="#c8a878" stroke-width="1.3" opacity="0.78"/>
+  </svg>`,
+
+  // ── DEAD: X eyes, slack open jaw, faded everything ────────────────────────
+  dead: `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="244" rx="76" ry="20" fill="#1c0f06" opacity="0.55"/>
+    <path d="M42 218 Q62 200 100 196 Q138 200 158 218 L156 244 Q100 248 44 244 Z" fill="#1c0f06" opacity="0.55"/>
+    <polygon points="33,95 22,38 68,76" fill="#1c0f06" opacity="0.55"/>
+    <polygon points="39,89 32,46 63,74" fill="#5a2518" opacity="0.55"/>
+    <polygon points="167,95 178,38 132,76" fill="#1c0f06" opacity="0.55"/>
+    <polygon points="161,89 168,46 137,74" fill="#5a2518" opacity="0.55"/>
+    <ellipse cx="100" cy="130" rx="83" ry="79" fill="#1c0f06" opacity="0.55"/>
+    <ellipse cx="100" cy="161" rx="30" ry="23" fill="#2e1a09" opacity="0.4"/>
+    <line x1="51" y1="96" x2="89" y2="134" stroke="#5a2518" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+    <line x1="89" y1="96" x2="51" y2="134" stroke="#5a2518" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+    <line x1="111" y1="96" x2="149" y2="134" stroke="#5a2518" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+    <line x1="149" y1="96" x2="111" y2="134" stroke="#5a2518" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+    <path d="M93,154 L107,154 L100,162 Z" fill="#5a2518" opacity="0.5"/>
+    <path d="M83,168 Q100,186 117,168 Q100,196 83,168 Z" fill="#5a2518" opacity="0.55"/>
+    <ellipse cx="100" cy="185" rx="9" ry="5.5" fill="#6b1010" opacity="0.45"/>
+    <line x1="24" y1="155" x2="70" y2="159" stroke="#c8a878" stroke-width="1.2" opacity="0.3"/>
+    <line x1="21" y1="162" x2="70" y2="162" stroke="#c8a878" stroke-width="1.2" opacity="0.3"/>
+    <line x1="130" y1="159" x2="176" y2="155" stroke="#c8a878" stroke-width="1.2" opacity="0.3"/>
+    <line x1="130" y1="162" x2="179" y2="162" stroke="#c8a878" stroke-width="1.2" opacity="0.3"/>
+  </svg>`,
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const STAGES = [
+  {
+    id: 'full', min: 0, max: 33,
+    label: 'Сытый и доволен', sub: 'пока что',
+    color: '#4ade80', mood: 'happy', ariaLabel: 'Кот Гучи — доволен',
+    msgs: [
+      'Гучи мурчит. Вы в безопасности… на ближайшие 3 минуты.',
+      'Гучи смотрит в окно и думает о ваших ошибках.',
+      'Гучи доволен. Запомните это чувство — оно не вернётся.',
+      'Гучи чистит лапу. Это не значит, что он вас простил.',
+    ],
+  },
+  {
+    id: 'hungry', min: 34, max: 60,
+    label: 'Очень голодный', sub: 'начинаются проблемы',
+    color: '#facc15', mood: 'annoyed', ariaLabel: 'Кот Гучи — раздражён',
+    msgs: [
+      'Гучи смотрит на вас. Потом на пустую миску. Потом снова на вас.',
+      'Гучи уже начал составлять список претензий. Он длинный.',
+      'Гучи демонстративно сидит спиной. Это хуже, чем крики.',
+      'Гучи написал анонимную жалобу в ЖКХ. Просто потому что может.',
+    ],
+  },
+  {
+    id: 'starving', min: 61, max: 80,
+    label: 'Пиздец какой голодный', sub: 'это ваша вина',
+    color: '#f97316', mood: 'furious', ariaLabel: 'Кот Гучи — в ярости',
+    msgs: [
+      'Гучи нашёл ваш паспорт. Не спрашивайте зачем.',
+      'Гучи уже смотрел цены на адвоката по разводам.',
+      'Гучи знает 47 способов испортить вам жизнь. Он выбирает.',
+      'Гучи отписался от вашего инстаграма. Публично.',
+      'Гучи позвонил вашей маме и рассказал правду о вас.',
+    ],
+  },
+  {
+    id: 'danger', min: 81, max: 100,
+    label: 'Твоя жизнь в опасности', sub: '⚠ это не шутка ⚠',
+    color: '#ef4444', mood: 'murderous', ariaLabel: 'Кот Гучи — опасен',
+    msgs: [
+      'Гучи вызвал Яндекс.Такси к вашим соседям. Пожить.',
+      'Гучи нашёл ваш ноутбук. Пароль его не остановил.',
+      'Гучи написал мемуары. Вы — главный злодей.',
+      'Гучи связался с налоговой. По вашему поводу.',
+      'Гучи уже выбирает новых хозяев на Авито.',
+    ],
+  },
+]
+
+const FOODS = [
+  { id:'doshirak',  emoji:'🍜', name:'Доширак',            desc:'«Я студент»',       satiety:10, cost:'₽',
+    reactions:['Гучи съел. Занёс вас в Чёрный список. Навсегда.','Серьёзно? ДОШИРАК? Гучи не забудет этого унижения.','Гучи доел и смотрит на вас как человек, которому нечего терять.'] },
+  { id:'viskas',    emoji:'🫙', name:'Вискас',              desc:'классика нищеты',   satiety:18, cost:'₽₽',
+    reactions:['Гучи ел. Теперь знает, где вы живёте. Но он и так знал.','Вискас? Гучи ожидал большего. Как всегда с вами.','Гучи съел «морской коктейль». Он не знает что это. И вы не знаете.'] },
+  { id:'chicken',   emoji:'🍗', name:'Куриная грудка',     desc:'ЗОЖ для кота',      satiety:25, cost:'₽₽',
+    reactions:['ЗОЖ? Это КОТ, а не инстаграм-блогер из Москвы.','Гучи съел без соли и специй. Молча. Это страшнее крика.','Гучи смотрит на вашу пиццу. Потом на свою грудку. Ненавидит вас.'] },
+  { id:'tuna',      emoji:'🐟', name:'Тунец',               desc:'уже теплее',        satiety:30, cost:'₽₽₽',
+    reactions:['Сносно. Гучи снизил угрозу с красного до оранжевого.','Тунец из банки? Гучи сделал вид, что рад. Он врёт.','Гучи доволен на 34%. Это исторический максимум с вами.'] },
+  { id:'beef',      emoji:'🥩', name:'Мраморная говядина',  desc:'вы старались',      satiety:50, cost:'₽₽₽₽',
+    reactions:['Гучи доволен. Временно. Наслаждайтесь покоем.','Гучи ел мраморную говядину и думал, что вы наконец поняли.','Гучи съел и даже посмотрел на вас без ненависти. Прогресс.'] },
+  { id:'salmon',    emoji:'🍣', name:'Лосось А-класса',    desc:'уважение',           satiety:65, cost:'₽₽₽₽₽',
+    reactions:['Гучи впервые мурчит по-настоящему. Вы сделали это.','Гучи снял вас с доски позора. Пока.','Гучи мурчит. Забыл обиды. Ненадолго — но всё же.'] },
+  { id:'pizza',     emoji:'🍕', name:'Ваши объедки пиццы',  desc:'совсем не стыдно', satiety:6,  cost:'₀',
+    reactions:['Пицца без мяса — это просто хлеб с томатом. Гучи в ужасе.','Гучи съел ваши объедки. Это оскорбление. Гучи помнит.','Гучи ел пиццу с ананасами. Теперь он злее, чем был.'] },
+]
+
+const GAME_OVER_MSGS = [
+  'Гучи собрал вещи и уехал к соседям. Они нормально кормят.',
+  'Гучи разместил объявление на Авито: «Ищу хозяев. Предыдущие — мусор».',
+  'Гучи улетел в Дубай. Самостоятельно. Первым классом.',
+  'Гучи написал книгу «Как я выжил». Вы — антагонист.',
+]
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let hungerInt = 150
+const TICK_STEP = 25
+let isDead = false
+let timeSinceLastFeed = 0
+let msgTimer = null
+let currentStage = null
+let tickInterval = null
+
+// ─── DOM ──────────────────────────────────────────────────────────────────────
+const $app            = document.getElementById('app')
+const $deadScreen     = document.getElementById('dead-screen')
+const $badge          = document.getElementById('stage-badge')
+const $label          = document.getElementById('stage-label')
+const $sub            = document.getElementById('stage-sub')
+const $cat            = document.getElementById('cat')
+const $deadCat        = document.getElementById('dead-cat')
+const $fill           = document.getElementById('hunger-fill')
+const $pct            = document.getElementById('hunger-pct')
+const $track          = $fill.parentElement
+const $msg            = document.getElementById('msg-text')
+const $ticker         = document.getElementById('ticker')
+const $fGrid          = document.getElementById('food-grid')
+const $footerTime     = document.getElementById('footer-time')
+const $footerHung     = document.getElementById('footer-hunger')
+const $deadMsg        = document.getElementById('dead-msg')
+const $resetBtn       = document.getElementById('reset-btn')
+const $dangerAnnounce = document.getElementById('danger-announce')
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)] }
+function getStage(h) {
+  const pct = h / 10
+  return STAGES.find(s => pct >= s.min && pct <= s.max) ?? STAGES[STAGES.length - 1]
+}
+
+// ─── Cat render ───────────────────────────────────────────────────────────────
+// SVG content is entirely hardcoded in CAT_SVGS — safe to use innerHTML
+function setCat(stage) {
+  $cat.innerHTML = CAT_SVGS[stage.mood]
+  $cat.className = `cat-container mood-${stage.mood}`
+  $cat.setAttribute('aria-label', stage.ariaLabel)
+}
+
+function shakeCat() {
+  $cat.classList.remove('shaking')
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      $cat.classList.add('shaking')
+      setTimeout(() => $cat.classList.remove('shaking'), 600)
+    })
+  })
+}
+
+// ─── UI update ────────────────────────────────────────────────────────────────
+function updateUI() {
+  const stage = getStage(hungerInt)
+  const pct = Math.round(hungerInt / 10)
+
+  if (!currentStage || currentStage.id !== stage.id) {
+    currentStage = stage
+    $label.textContent = stage.label
+    $sub.textContent   = stage.sub
+    $badge.style.color = stage.color
+    $badge.style.borderColor = stage.color
+    setCat(stage)
+    $app.className = `app stage-${stage.id}`
+    $ticker.classList.toggle('hidden', stage.id !== 'danger')
+
+    if (stage.id === 'danger') {
+      $dangerAnnounce.textContent = 'Внимание! Гучи в режиме уничтожения. Кормите немедленно!'
+    } else {
+      $dangerAnnounce.textContent = ''
+    }
+
+    clearInterval(msgTimer)
+    msgTimer = setInterval(() => {
+      if (currentStage) setMsg(rand(currentStage.msgs))
+    }, 8000)
+  }
+
+  $fill.style.width = `${pct}%`
+  $fill.style.background = stage.color
+  $fill.style.boxShadow = `0 0 12px ${stage.color}`
+  $pct.textContent = `${pct}%`
+  $track.setAttribute('aria-valuenow', pct)
+  $footerTime.textContent = Math.round(timeSinceLastFeed * 2.5)
+  $footerHung.textContent = pct
+}
+
+function setMsg(text) {
+  $msg.style.opacity = '0'
+  setTimeout(() => { $msg.textContent = text; $msg.style.opacity = '1' }, 200)
+}
+
+// ─── Food grid ────────────────────────────────────────────────────────────────
+function buildFoodGrid() {
+  $fGrid.textContent = ''
+  FOODS.forEach(food => {
+    const btn = document.createElement('button')
+    btn.className = 'food-btn'
+    btn.type = 'button'
+    btn.setAttribute('aria-label', `Покормить Гучи: ${food.name}`)
+
+    const emoji = document.createElement('span'); emoji.className = 'food-emoji'; emoji.textContent = food.emoji
+    const name  = document.createElement('span'); name.className  = 'food-name';  name.textContent  = food.name
+    const desc  = document.createElement('span'); desc.className  = 'food-desc';  desc.textContent  = food.desc
+    const cost  = document.createElement('span'); cost.className  = 'food-cost';  cost.textContent  = food.cost
+
+    btn.append(emoji, name, desc, cost)
+    btn.addEventListener('click', () => feed(food, btn))
+    $fGrid.appendChild(btn)
+  })
+}
+
+// ─── Feed ─────────────────────────────────────────────────────────────────────
+function feed(food, btn) {
+  if (isDead) return
+  hungerInt = Math.max(0, hungerInt - food.satiety * 10)
+  timeSinceLastFeed = 0
+  clearInterval(msgTimer)
+  setMsg(rand(food.reactions))
+  msgTimer = setInterval(() => { if (currentStage) setMsg(rand(currentStage.msgs)) }, 8000)
+  shakeCat()
+  btn.classList.add('fed')
+  setTimeout(() => btn.classList.remove('fed'), 1000)
+  updateUI()
+}
+
+// ─── Tick ─────────────────────────────────────────────────────────────────────
+function tick() {
+  if (isDead) return
+  hungerInt = Math.min(1000, hungerInt + TICK_STEP)
+  timeSinceLastFeed++
+  if (hungerInt >= 1000) { gameOver(); return }
+  updateUI()
+}
+
+// ─── Game Over ────────────────────────────────────────────────────────────────
+function gameOver() {
+  isDead = true
+  clearInterval(msgTimer)
+  clearInterval(tickInterval)
+  tickInterval = null
+  // SVG is hardcoded — safe
+  $deadCat.innerHTML = CAT_SVGS.dead
+  $app.classList.add('hidden')
+  $deadScreen.classList.remove('hidden')
+  $deadMsg.textContent = rand(GAME_OVER_MSGS)
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function reset() {
+  isDead = false
+  hungerInt = 150
+  timeSinceLastFeed = 0
+  currentStage = null
+  $dangerAnnounce.textContent = ''
+  $deadScreen.classList.add('hidden')
+  $app.classList.remove('hidden')
+  setMsg('Гучи вернулся. Шансов у вас меньше, чем раньше.')
+  updateUI()
+  tickInterval = setInterval(tick, 2500)
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildFoodGrid()
+updateUI()
+tickInterval = setInterval(tick, 2500)
+$resetBtn.addEventListener('click', reset)
+</script>
+</body>
+</html>
