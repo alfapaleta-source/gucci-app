@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Гучи — 3 варианта дизайна</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0f;
+      font-family: 'Inter', sans-serif;
+      color: #e8e8f0;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(14px, 3vw, 22px);
+      text-align: center;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #facc15, #f97316, #ef4444);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      letter-spacing: 0.1em;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b6b88;
+      font-size: 13px;
+      margin-bottom: 50px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #13131a;
+      border: 2px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 32px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .card:hover { border-color: #f97316; transform: translateY(-4px); }
+    .card svg { width: 100%; max-width: 280px; height: auto; display: block; }
+    .card-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e8e8f0;
+      text-align: center;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #6b6b88;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .badge-1 { color: #4ade80; border-color: #4ade80; }
+    .badge-2 { color: #facc15; border-color: #facc15; }
+    .badge-3 { color: #ef4444; border-color: #ef4444; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<h1>ГУЧИ — 3 ВАРИАНТА</h1>
+<p class="subtitle">Стиль: Family Guy · Выбери голову для игры</p>
+
+<div class="grid">
+
+  <!-- ══════════════════════════════════════════════════════════
+       ВАРИАНТ 1: "КЛАССИК" — фронтальный, контурный стиль FG
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <svg viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+      <!-- Шея / плечи -->
+      <path d="M90,300 Q110,268 150,262 Q190,268 210,300 L214,334 Q150,338 86,334 Z"
+            fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+
+      <!-- Ухо ЛЕВОЕ внешнее -->
+      <polygon points="62,110 40,28 106,84"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <!-- Ухо ЛЕВОЕ внутреннее -->
+      <polygon points="70,102 54,46 98,80" fill="#7a3020"/>
+
+      <!-- Ухо ПРАВОЕ внешнее -->
+      <polygon points="238,110 260,28 194,84"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <!-- Ухо ПРАВОЕ внутреннее -->
+      <polygon points="230,102 246,46 202,80" fill="#7a3020"/>
+
+      <!-- Голова -->
+      <ellipse cx="150" cy="175" rx="108" ry="104"
+               fill="#1a0d06" stroke="#000" stroke-width="4.5"/>
+
+      <!-- Зона морды -->
+      <ellipse cx="150" cy="215" rx="42" ry="30"
+               fill="#2e1a09" stroke="#000" stroke-width="2.5"/>
+
+      <!-- == ГЛАЗ ЛЕВЫЙ == -->
+      <!-- Белок -->
+      <ellipse cx="105" cy="158" rx="30" ry="30" fill="white" stroke="#000" stroke-width="3.5"/>
+      <!-- Радужка -->
+      <ellipse cx="105" cy="158" rx="23" ry="23" fill="#e8b800"/>
+      <!-- Зрачок -->
+      <ellipse cx="105" cy="160" rx="10" ry="12" fill="#0a0500"/>
+      <!-- Блик -->
+      <circle cx="97" cy="150" r="6" fill="white"/>
+      <!-- Верхнее веко (линия) -->
+      <path d="M76,142 Q105,130 134,142"
+            stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <!-- Нижнее веко (линия) -->
+      <path d="M80,175 Q105,182 130,175"
+            stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- == ГЛАЗ ПРАВЫЙ == -->
+      <ellipse cx="195" cy="158" rx="30" ry="30" fill="white" stroke="#000" stroke-width="3.5"/>
+      <ellipse cx="195" cy="158" rx="23" ry="23" fill="#e8b800"/>
+      <ellipse cx="195" cy="160" rx="10" ry="12" fill="#0a0500"/>
+      <circle cx="187" cy="150" r="6" fill="white"/>
+      <path d="M166,142 Q195,130 224,142"
+            stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M170,175 Q195,182 220,175"
+            stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Нос -->
+      <path d="M136,208 L164,208 L150,220 Z" fill="#6b2d1a" stroke="#000" stroke-width="2.5"/>
+      <!-- Уздечка -->
+      <line x1="147" y1="220" x2="143" y2="230" stroke="#000" stroke-width="2.5"/>
+      <line x1="153" y1="220" x2="157" y2="230" stroke="#000" stroke-width="2.5"/>
+
+      <!-- Рот: довольный -->
+      <path d="M130,234 Q150,248 170,234"
+            stroke="#000" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Усы ЛЕВЫЕ -->
+      <line x1="40" y1="210" x2="108" y2="216" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="36" y1="220" x2="108" y2="222" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="40" y1="230" x2="108" y2="228" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <!-- Усы ПРАВЫЕ -->
+      <line x1="192" y1="216" x2="260" y2="210" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="192" y1="222" x2="264" y2="220" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="192" y1="228" x2="260" y2="230" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+
+    <span class="badge badge-1">Вариант 1</span>
+    <div class="card-title">«Классик»</div>
+    <div class="card-desc">Фронтальный вид. Белки глаз как у персонажей Family Guy. Чёткие контуры, плоский цвет.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ВАРИАНТ 2: "ПРИЩУР 3/4" — поворот, асимметрия, взгляд сбоку
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <svg viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+      <!-- Шея / плечи (смещены вправо — 3/4 вид) -->
+      <path d="M100,300 Q125,268 165,262 Q205,268 220,300 L224,334 Q162,338 96,334 Z"
+            fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+
+      <!-- Голова (сдвинута правее для 3/4) -->
+      <ellipse cx="158" cy="178" rx="108" ry="104"
+               fill="#1a0d06" stroke="#000" stroke-width="4.5"/>
+
+      <!-- Ухо ЛЕВОЕ (дальнее — меньше) -->
+      <polygon points="82,112 68,38 118,90"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="88,104 76,52 110,88" fill="#7a3020"/>
+
+      <!-- Ухо ПРАВОЕ (ближнее — больше) -->
+      <polygon points="248,106 272,22 202,82"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="240,98 260,36 208,80" fill="#7a3020"/>
+
+      <!-- Зона морды (смещена) -->
+      <ellipse cx="162" cy="218" rx="44" ry="30"
+               fill="#2e1a09" stroke="#000" stroke-width="2.5"/>
+
+      <!-- == ГЛАЗ ЛЕВЫЙ (дальний — прищурен, меньше) == -->
+      <ellipse cx="118" cy="160" rx="22" ry="22" fill="white" stroke="#000" stroke-width="3"/>
+      <ellipse cx="118" cy="160" rx="17" ry="17" fill="#e8b800"/>
+      <ellipse cx="120" cy="162" rx="8" ry="10" fill="#0a0500"/>
+      <circle cx="112" cy="153" r="4" fill="white"/>
+      <!-- Прищуренное верхнее веко — закрывает глаз наполовину -->
+      <path d="M97,148 Q118,138 139,148" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <ellipse cx="118" cy="148" rx="22" ry="11" fill="#1a0d06" stroke="#000" stroke-width="3"/>
+
+      <!-- == ГЛАЗ ПРАВЫЙ (ближний — открыт, крупнее) == -->
+      <ellipse cx="196" cy="156" rx="32" ry="32" fill="white" stroke="#000" stroke-width="3.5"/>
+      <ellipse cx="196" cy="156" rx="25" ry="25" fill="#e8b800"/>
+      <ellipse cx="196" cy="158" rx="11" ry="14" fill="#0a0500"/>
+      <circle cx="186" cy="146" r="7" fill="white"/>
+      <!-- Нахмуренная бровь над большим глазом -->
+      <path d="M168,136 Q196,122 224,136" stroke="#000" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <!-- Веко чуть прикрыто -->
+      <path d="M168,140 Q196,130 224,140" stroke="#1a0d06" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M170,153 Q196,162 222,153" stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Нос (смещён правее) -->
+      <path d="M148,211 L172,211 L160,223 Z" fill="#6b2d1a" stroke="#000" stroke-width="2.5"/>
+      <line x1="157" y1="223" x2="153" y2="232" stroke="#000" stroke-width="2.5"/>
+      <line x1="163" y1="223" x2="167" y2="232" stroke="#000" stroke-width="2.5"/>
+
+      <!-- Рот: скептическая ухмылка -->
+      <path d="M142,237 Q162,242 176,232"
+            stroke="#000" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <!-- Уголок рта -->
+      <path d="M142,237 Q138,242 140,246"
+            stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Усы ЛЕВЫЕ (дальние — короче) -->
+      <line x1="68" y1="212" x2="118" y2="216" stroke="#c8a878" stroke-width="2" stroke-linecap="round"/>
+      <line x1="65" y1="222" x2="118" y2="223" stroke="#c8a878" stroke-width="2" stroke-linecap="round"/>
+      <!-- Усы ПРАВЫЕ (ближние — длиннее) -->
+      <line x1="206" y1="216" x2="275" y2="208" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="206" y1="223" x2="278" y2="218" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="206" y1="230" x2="274" y2="228" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+
+    <span class="badge badge-2">Вариант 2</span>
+    <div class="card-title">«3/4 Прищур»</div>
+    <div class="card-desc">Поворот головы. Один глаз прищурен — другой открыт. Классическая «подозрительная» поза из комикса.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ВАРИАНТ 3: "БЕШЕНЫЙ" — крупный план, V-брови, зубы
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <svg viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+      <!-- Шея / плечи -->
+      <path d="M85,302 Q108,270 150,264 Q192,270 215,302 L218,336 Q150,340 82,336 Z"
+            fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+
+      <!-- Ухо ЛЕВОЕ — прижато (злость) -->
+      <polygon points="66,116 52,42 108,92"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="73,108 62,56 100,90" fill="#7a3020"/>
+
+      <!-- Ухо ПРАВОЕ — прижато -->
+      <polygon points="234,116 248,42 192,92"
+               fill="#1a0d06" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+      <polygon points="227,108 238,56 200,90" fill="#7a3020"/>
+
+      <!-- Голова -->
+      <ellipse cx="150" cy="178" rx="110" ry="106"
+               fill="#1a0d06" stroke="#000" stroke-width="5"/>
+
+      <!-- Зона морды -->
+      <ellipse cx="150" cy="222" rx="44" ry="32"
+               fill="#2e1a09" stroke="#000" stroke-width="2.5"/>
+
+      <!-- == БРОВЬ ЛЕВАЯ: резкая V вниз == -->
+      <path d="M70,120 L106,138" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+      <!-- == БРОВЬ ПРАВАЯ: резкая V вниз == -->
+      <path d="M194,138 L230,120" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+
+      <!-- == ГЛАЗ ЛЕВЫЙ: широко открыт, зрачок-щель == -->
+      <ellipse cx="105" cy="160" rx="30" ry="30" fill="white" stroke="#000" stroke-width="3.5"/>
+      <ellipse cx="105" cy="160" rx="23" ry="23" fill="#e8b800"/>
+      <!-- Зрачок вертикальная щель (кошачий яростный) -->
+      <ellipse cx="105" cy="160" rx="5" ry="16" fill="#0a0500"/>
+      <circle cx="97" cy="150" r="5" fill="white"/>
+      <!-- Верхнее веко -->
+      <path d="M76,144 Q105,132 134,144" stroke="#000" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+      <!-- == ГЛАЗ ПРАВЫЙ == -->
+      <ellipse cx="195" cy="160" rx="30" ry="30" fill="white" stroke="#000" stroke-width="3.5"/>
+      <ellipse cx="195" cy="160" rx="23" ry="23" fill="#e8b800"/>
+      <ellipse cx="195" cy="160" rx="5" ry="16" fill="#0a0500"/>
+      <circle cx="187" cy="150" r="5" fill="white"/>
+      <path d="M166,144 Q195,132 224,144" stroke="#000" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+      <!-- Нос -->
+      <path d="M136,212 L164,212 L150,225 Z" fill="#6b2d1a" stroke="#000" stroke-width="2.5"/>
+      <line x1="147" y1="225" x2="142" y2="235" stroke="#000" stroke-width="2.5"/>
+      <line x1="153" y1="225" x2="158" y2="235" stroke="#000" stroke-width="2.5"/>
+
+      <!-- Рот: ОТКРЫТ — зубы -->
+      <!-- Нижняя губа / полость -->
+      <path d="M118,242 Q150,268 182,242 Q150,280 118,242 Z"
+            fill="#6b1515" stroke="#000" stroke-width="3.5"/>
+      <!-- Зубы верхние -->
+      <rect x="122" y="242" width="12" height="10" rx="2" fill="white" stroke="#000" stroke-width="1.5"/>
+      <rect x="136" y="242" width="12" height="10" rx="2" fill="white" stroke="#000" stroke-width="1.5"/>
+      <rect x="150" y="242" width="12" height="10" rx="2" fill="white" stroke="#000" stroke-width="1.5"/>
+      <rect x="164" y="242" width="12" height="10" rx="2" fill="white" stroke="#000" stroke-width="1.5"/>
+      <!-- Язык -->
+      <ellipse cx="150" cy="266" rx="14" ry="9" fill="#c0392b" stroke="#000" stroke-width="1.5"/>
+
+      <!-- Усы ЛЕВЫЕ -->
+      <line x1="38" y1="215" x2="106" y2="220" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="34" y1="226" x2="106" y2="227" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="38" y1="237" x2="106" y2="234" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <!-- Усы ПРАВЫЕ -->
+      <line x1="194" y1="220" x2="262" y2="215" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="194" y1="227" x2="266" y2="226" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+      <line x1="194" y1="234" x2="262" y2="237" stroke="#c8a878" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+
+    <span class="badge badge-3">Вариант 3</span>
+    <div class="card-title">«Бешеный»</div>
+    <div class="card-desc">Крупный план. Жёсткие V-брови, щелевидные зрачки, открытая пасть с зубами. Максимальная агрессия.</div>
+  </div>
+
+</div>
+
+</body>
+</html>
